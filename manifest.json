@@ -1,0 +1,15 @@
+{
+    "name": "YT-Spotify Playlist Transfer",
+    "version": "1.0",
+    "description": "An extension where you transfer playlists from YouTube to Spotify!",
+
+    "page_action": {
+        "default_popup": "popup.html",
+        "default_icon": {
+            "128": "images/icon.png"
+        }
+    },
+
+    "manifest_version": 2
+    
+}
