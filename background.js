@@ -33,11 +33,11 @@ function definePlaylist(ytLink) {
 
     // start the transfer process.
     transferPlaylist();
-    alert(link);
+    // alert(link);
 }
 
 function transferPlaylist() {
-    chrome.tabs.create({ url : link});
+    chrome.tabs.create({ url : link, active: false});
     // var win = window.open(link, "_blank");
     // win.focus();
 
@@ -45,13 +45,26 @@ function transferPlaylist() {
 }
 
 function getMusic() {
-    mvName.push("SOLO");
-    channelName.push("JENNIE - Topic");
-    alert(mvName);
-    alert(channelName);
-    chrome.tabs.create({ url : "https://www.google.com"});
+    // var found = $x("");
+    // alert(found);
+    // alert(getElementByXpath("/html/body/ytd-app/div/ytd-page-manager/ytd-browse[3]/ytd-two-column-browse-results-renderer/div[1]/ytd-section-list-renderer/div[2]/ytd-item-section-renderer/div[3]/ytd-playlist-video-list-renderer/div[3]/ytd-playlist-video-renderer[1]/div[2]/a/div/h3/span"));
+    // alert(mvName);
+    // alert(channelName);
+    window.location = link;
+    //var req = Spry.Utils.loadURL("GET", link, true);
+    var req = loadURL("http://www.youtube.com");
+    alert(req);
+    // const content = element.innerHTML;
+    // element.innerHTML = link;
+    var name = document.getElementById("yt-link").value;
+    //var name = getElementByXpath("/html/body/ytd-app/div/ytd-page-manager/ytd-browse[3]/ytd-two-column-browse-results-renderer/div[1]/ytd-section-list-renderer/div[2]/ytd-item-section-renderer/div[3]/ytd-playlist-video-list-renderer/div[3]/ytd-playlist-video-renderer[1]/div[2]/a/div/h3/span");
+    alert(name);
 }
 
 function done() {
     alert("Done transferring playlist!");
+}
+
+function getElementByXpath(path) {
+    return document.evaluate(path, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;
 }
