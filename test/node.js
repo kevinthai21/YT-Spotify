@@ -86,10 +86,47 @@ async function makeNewPlaylist() {
     await page.screenshot({path:'spotify.png'});
     await page.click('button.fcdf941c8ffa7d0878af0a4f04aa05bb-scss');
 
+    const inputPlaylistName = await page.$x('/html/body/div[4]/div/div[3]/div/div[1]/div/div/input');
+    await inputPlaylistName[0].type('Test playlist');
+    await page.screenshot({path:'screenshots/spotify_1_test.png'});
+
+    const buttonCreate = await page.$x('/html/body/div[4]/div/div[3]/div/div[2]/div[2]/button');
+    await buttonCreate[0].click();
+    await page.screenshot({path:'screenshots/spotify_2_created.png'});
+
+    const buttonSearch = await page.$x('/html/body/div[4]/div/div[2]/div[2]/nav/ul/li[2]/a');
+    await buttonSearch[0].click();
+    await page.screenshot({path:'screenshots/spotify_3_search.png'});
+
+    const inputSong = await page.$x('/html/body/div[4]/div/div[2]/div[1]/header/div[3]/div/div/input');
+    await inputSong[0].type('Jennie Solo');
+    await page.waitFor(8000);
+    await page.screenshot({path:'screenshots/spotify_4_searchResults.png'});
+
+    const foundSong = await page.$x('/html/body/div[4]/div/div[2]/div[4]/div[1]/div/div[2]/div/div/div[2]/div/div/div/section[2]/div/div[2]/div[1]/div/div/div[3]');
+    await foundSong[0].click({button:'right'});
+    await page.waitFor(8000);
+    await page.screenshot({path:'screenshots/spotify_5_options.png'});
+
+
+    const buttonAdd = await page.$x('/html/body/div[4]/div/nav[1]/div[4]');
+    await buttonAdd[0].click();
+    await page.waitFor(8000);
+    await page.screenshot({path:'screenshots/spotify_6_setOfPlaylists.png'});
+
+    const buttonPlaylist = await page.$x('/html/body/div[4]/div/div[3]/div/div[4]/div/div/div[2]/div[1]/div/div/div/div');
+    await buttonPlaylist[0].click();
+    await page.waitFor(8000);
+    await page.screenshot({path:'screenshots/spotify_7_done.png'});
+
+
+    
+
+
     await browser.close();
 }
 
-scrapePlaylist('https://www.youtube.com/playlist?list=PLIdyziN9sUYuVDKKzkmJ-Epfx9DnJwb-G');
+scrapePlaylist('https://www.youtube.com/playlist?list=PL1_xnl_NJ7lCbr3JBcBlRuMm2rlPdw1lw');
 
 
 makeNewPlaylist();
