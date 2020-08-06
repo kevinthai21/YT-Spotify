@@ -1,6 +1,8 @@
 const puppeteer = require('puppeteer');
 var listSong = [];
 var listChannel = [];
+let spotifyEmail;
+let spotifyPass;
 
 
 async function scrapePlaylist(url) {
@@ -59,17 +61,35 @@ async function scrapePlaylist(url) {
     console.log(listSong);
     console.log(listChannel);
     await browser.close();
-    // await makeNewPlaylist();
+    await makeNewPlaylist();
 }
 
 async function makeNewPlaylist() {
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
-    await page.goto('https://open.spotify.com');
+    await page.setViewport({
+        width: 1200,
+        height: 800
+    });
+    await page.goto('https://accounts.spotify.com/en/login?continue=https:%2F%2Fopen.spotify.com%2F');
+    await page.screenshot({path:'spotify.png'});
+    
+    const inputUser = await page.$x('/html/body/div[1]/div[2]/div/form/div[1]/div/input');
+    await page.screenshot({path:'spotify.png'});
+    const inputPass = await page.$x('/html/body/div[1]/div[2]/div/form/div[2]/div/input');
+    await page.screenshot({path:'spotify.png'});
+
+    const buttonLogin = await page.$x('/html/body/div[1]/div[2]/div/form/div[3]/div[2]/button');
+    await buttonLogin[0].click();
+    await page.waitFor(8000);
+
+    await page.screenshot({path:'spotify.png'});
     await page.click('button.fcdf941c8ffa7d0878af0a4f04aa05bb-scss');
-    await page.screenshot({path:'random.png'});
 
     await browser.close();
 }
 
 scrapePlaylist('https://www.youtube.com/playlist?list=PLIdyziN9sUYuVDKKzkmJ-Epfx9DnJwb-G');
+
+
+makeNewPlaylist();
