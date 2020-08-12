@@ -66,7 +66,7 @@ async function scrapePlaylist(url) {
             window.scrollBy(0,10000);
         });
         await page.waitFor(6000);
-        await page.screenshot({path:'1000.png'});
+        // await page.screenshot({path:'1000.png'});
 
         console.log("Time to get info!\n");
 
@@ -143,16 +143,16 @@ async function makeSpotifyPlaylist() {
         height: 800
     });
     await page.goto('https://accounts.spotify.com/en/login?continue=https:%2F%2Fopen.spotify.com%2F');
-    await page.screenshot({path:'spotify.png'});
+    // await page.screenshot({path:'spotify.png'});
     
     // It will input the login details. The program won't save the login details.
     
     const inputUser = await page.$x('/html/body/div[1]/div[2]/div/form/div[1]/div/input');
     await inputUser[0].type(spotifyEmail);
-    await page.screenshot({path:'spotify.png'});
+    // await page.screenshot({path:'spotify.png'});
     const inputPass = await page.$x('/html/body/div[1]/div[2]/div/form/div[2]/div/input');
     await inputPass[0].type(spotifyPass);
-    await page.screenshot({path:'spotify.png'});
+    // await page.screenshot({path:'spotify.png'});
 
     const buttonLogin = await page.$x('/html/body/div[1]/div[2]/div/form/div[3]/div[2]/button');
     await buttonLogin[0].click();
@@ -161,7 +161,7 @@ async function makeSpotifyPlaylist() {
     // if can click on this successfully, it has logged in.
     try {
         // This will create a new, empty playlist.
-        await page.screenshot({path:'spotify.png'});
+        // await page.screenshot({path:'spotify.png'});
         await page.click('button.fcdf941c8ffa7d0878af0a4f04aa05bb-scss');
 
     }
@@ -173,15 +173,15 @@ async function makeSpotifyPlaylist() {
 
     const inputPlaylistName = await page.$x('/html/body/div[4]/div/div[3]/div/div[1]/div/div/input');
     await inputPlaylistName[0].type(playlistName);
-    await page.screenshot({path:'screenshots/spotify_1_test.png'});
+    // await page.screenshot({path:'screenshots/spotify_1_test.png'});
 
     const buttonCreate = await page.$x('/html/body/div[4]/div/div[3]/div/div[2]/div[2]/button');
     await buttonCreate[0].click();
-    await page.screenshot({path:'screenshots/spotify_2_created.png'});
+    // await page.screenshot({path:'screenshots/spotify_2_created.png'});
 
     const buttonSearch = await page.$x('/html/body/div[4]/div/div[2]/div[2]/nav/ul/li[2]/a');
     await buttonSearch[0].click();
-    await page.screenshot({path:'screenshots/spotify_3_search.png'});
+    // await page.screenshot({path:'screenshots/spotify_3_search.png'});
 
     // This for-loop will search the song in Spotify. Then, it will add it to the playlist.
     let index;
@@ -190,24 +190,24 @@ async function makeSpotifyPlaylist() {
 
         await page.goto('https://open.spotify.com/search/'+ listSong[index]+ '%20' + listChannel[index]);
         await page.waitFor(3000);
-        await page.screenshot({path:'screenshots/spotify_4_searchResults.png'});
+        // await page.screenshot({path:'screenshots/spotify_4_searchResults.png'});
 
         try {
             const foundSong = await page.$x('/html/body/div[4]/div/div[2]/div[4]/div[1]/div/div[2]/div/div/div[2]/div/div/div/section[2]/div/div[2]/div[1]/div/div/div[3]');
             await foundSong[0].click({button:'right'});
             await page.waitFor(3000);
-            await page.screenshot({path:'screenshots/spotify_5_options.png'});
+            // await page.screenshot({path:'screenshots/spotify_5_options.png'});
 
 
             const buttonAdd = await page.$x('/html/body/div[4]/div/nav[1]/div[4]');
             await buttonAdd[0].click();
             await page.waitFor(3000);
-            await page.screenshot({path:'screenshots/spotify_6_setOfPlaylists.png'});
+            // await page.screenshot({path:'screenshots/spotify_6_setOfPlaylists.png'});
 
             const buttonPlaylist = await page.$x('/html/body/div[4]/div/div[3]/div/div[4]/div/div/div[2]/div[1]/div/div/div/div');
             await buttonPlaylist[0].click();
             await page.waitFor(3000);
-            await page.screenshot({path:'screenshots/spotify_7_done.png'});
+            // await page.screenshot({path:'screenshots/spotify_7_done.png'});
             console.log("Added " + listSong[index] + ' - ' + listChannel[index]);
             numSuccess += 1;
         }
