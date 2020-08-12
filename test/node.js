@@ -26,13 +26,24 @@ while (ready == false) {
     console.log("Please enter your Spotify login. Don't worry, it won't be saved elsewhere.");
     spotifyEmail = reader.question('Enter your Spotify email/username: ');
     spotifyPass = reader.question('Enter your Spotify password: ', { hideEchoBack: true});
-    spotifyPass.stdoutMuted = true;
+    let spotifyPassTest;
+    spotifyPassTest = reader.question('Re-enter your Spotify password: ', { hideEchoBack: true});
+    while(spotifyPass != spotifyPassTest)
+    {
+        console.log("The passwords are different! Try re-entering again...");
+        spotifyPass = reader.question('Enter your Spotify password: ', { hideEchoBack: true});
+        spotifyPassTest = reader.question('Re-enter your Spotify password: ', { hideEchoBack: true});
+    }
+    let spotifyPassEncrypt = "";
+    for(index=0; index<spotifyPass.length; index++) {
+        spotifyPassEncrypt = spotifyPassEncrypt + "*";
+    }
 
     console.log("Your information: ");
     console.log("<Playlist name>: " + playlistName);
     console.log("<Playlist link>: " + link);
     console.log("<Spotify username/email>: " + spotifyEmail);
-    console.log("<Spotify password>: " + spotifyPass);
+    console.log("<Spotify password>: " + spotifyPassEncrypt);
 
     if(reader.keyInYN("Is the information correct?")) { 
         ready = true;
