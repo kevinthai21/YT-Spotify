@@ -15,6 +15,7 @@ let link;
 let spotifyEmail;
 let spotifyPass;
 let ready = false;
+let failedTransfers = [];
 
 
 const reader = require('readline-sync');
@@ -61,7 +62,8 @@ song and its artist into an array.
 */
 async function scrapePlaylist(url) {
     ready = false;
-    console.log("Starting transfer...\n");
+    console.log("\n");
+    console.log("Opening browser...\n");
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
     try {
@@ -71,15 +73,13 @@ async function scrapePlaylist(url) {
             height: 800
         });
         
-
-        console.log("Scrolling...\n");
         await page.evaluate( ()=> {
             window.scrollBy(0,10000);
         });
         await page.waitFor(6000);
         // await page.screenshot({path:'1000.png'});
 
-        console.log("Time to get info!\n");
+        console.log("Time to copy info!\n");
 
     
         // saves the number of videos/songs in the playlist
@@ -90,7 +90,6 @@ async function scrapePlaylist(url) {
         nameNumber = nameNumber.replace('{"runs":[{"text":"','');
         nameNumber = nameNumber.replace(' videos"}]}', '');
         totalNum = parseInt(nameNumber);
-        console.log(totalNum);
 
         // the for-loop saves the title and channel from each song in the playlist
         var index;
@@ -107,7 +106,8 @@ async function scrapePlaylist(url) {
             nameSong = nameSong.replace('Music Video', 'MV').replace('MV', '');
 
             // if a video is deleted, do not save it.
-            if(nameSong == "[Deleted video]") {
+            if(nameSong == "") {
+                totalNum -=1;
                 continue;
             }
 
@@ -223,12 +223,17 @@ async function makeSpotifyPlaylist() {
             numSuccess += 1;
         }
         catch(err) {
-            console.log("Song not found: " + listSong[index] + ' - ' + listChannel[index]);
-            continue;
+            console.log("Failed to transfer " + listSong[index] + " - " + listChannel[index]);
+            failedTransfers.push(listSong[index] + " - " + listChannel[index]);
+            continue;            
         }
     }
     await browser.close();
-    console.log("Sucessfully added " + numSuccess + " songs!");
+    console.log("Sucessfully added " + numSuccess + "/" + totalNum + " songs!");
+    console.log("Failed transfers: ");
+    for(index=0; index<failedTransfers.length; index++){
+        console.log(failedTransfers[index]);
+    }
     return process.exit(0);
 }
 
