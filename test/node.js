@@ -66,8 +66,22 @@ async function scrapePlaylist(url) {
     console.log("Opening browser...\n");
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
+
+    // Configure the navigation timeout
+    await page.setDefaultNavigationTimeout(0);
+
+    // checks the link that user provided
     try {
+        if(url.includes("https://www.youtube.com") == false) {
+            throw new Error("Not valid link.");
+        }
         await page.goto(url);
+    }
+    catch (err) {
+        console.log("Invalid link. Either have the playlist be public/unlisted");
+        console.log("Remember to have the link be like this 'https://www.youtube.com...'");
+        return process.exit(1);
+    }
         await page.setViewport({
             width: 1200,
             height: 800
@@ -91,45 +105,45 @@ async function scrapePlaylist(url) {
         nameNumber = nameNumber.replace(' videos"}]}', '');
         totalNum = parseInt(nameNumber);
 
+        let indexTotalNum = totalNum;
+
         // the for-loop saves the title and channel from each song in the playlist
         var index;
-        for (index =1; index < totalNum + 1; index++) {
-            console.log(index);
-            
+        for (index =1; index < indexTotalNum + 1; index++) {            
             // saves the name of the song
-            const[el2] = await page.$x('/html/body/ytd-app/div/ytd-page-manager/ytd-browse/ytd-two-column-browse-results-renderer/div[1]/ytd-section-list-renderer/div[2]/ytd-item-section-renderer/div[3]/ytd-playlist-video-list-renderer/div[3]/ytd-playlist-video-renderer[' + index + ']/div[2]/a/div/h3/span');
-            const txtSong = await el2.getProperty('textContent');
-            let nameSong = await txtSong.jsonValue();
-            nameSong = JSON.stringify(nameSong);
-            nameSong = nameSong.replace(/\\n/g,'');
-            nameSong = nameSong.replace(/  +/g, '').replace(/"+/g,'');
-            nameSong = nameSong.replace('Music Video', 'MV').replace('MV', '');
+            try {
+                const[el2] = await page.$x('/html/body/ytd-app/div/ytd-page-manager/ytd-browse/ytd-two-column-browse-results-renderer/div[1]/ytd-section-list-renderer/div[2]/ytd-item-section-renderer/div[3]/ytd-playlist-video-list-renderer/div[3]/ytd-playlist-video-renderer[' + index + ']/div[2]/a/div/h3/span');
+                const txtSong = await el2.getProperty('textContent');
+                nameSong = await txtSong.jsonValue();
+                nameSong = JSON.stringify(nameSong);
 
-            // if a video is deleted, do not save it.
-            if(nameSong == "") {
-                totalNum -=1;
-                continue;
+                nameSong = nameSong.replace(/\\n/g,'');
+                nameSong = nameSong.replace(/  +/g, '').replace(/"+/g,'');
+                nameSong = nameSong.replace('Music Video', 'MV').replace('MV', '');
+                nameSong = nameSong.replace(/[^ a-zA-Z0-9()]+/g, "").replace(/  +/g, '');
+            
+
+                // saves the name of the channel that posted the song (relates to the artist).
+                const[el3] = await page.$x('/html/body/ytd-app/div/ytd-page-manager/ytd-browse/ytd-two-column-browse-results-renderer/div[1]/ytd-section-list-renderer/div[2]/ytd-item-section-renderer/div[3]/ytd-playlist-video-list-renderer/div[3]/ytd-playlist-video-renderer[' + index + ']/div[2]/a/div/ytd-video-meta-block/div[1]/div[1]/ytd-channel-name/div/div/yt-formatted-string/a');
+                const txtChannel = await el3.getProperty('text');
+                let nameChannel = await txtChannel.jsonValue();
+                nameChannel = JSON.stringify(nameChannel);
+                nameChannel = nameChannel.replace(/"+/g,'').replace(' - Topic', '').replace('OFFICIAL', '').replace('Official','');
+                nameChannel = nameChannel.replace("YouTube Channel", '');
+                nameChannel = nameChannel.replace("BANGTANTV", "BTS"); // This is a special case for BTS.
+                nameChannel = nameChannel.replace(/[^ a-zA-Z0-9()]+/g, "").replace(/  +/g, '');
+                console.log(nameSong, nameChannel);
+                listSong.push(nameSong);
+                listChannel.push(nameChannel);
             }
 
-            // saves the name of the channel that posted the song (relates to the artist).
-            const[el3] = await page.$x('/html/body/ytd-app/div/ytd-page-manager/ytd-browse/ytd-two-column-browse-results-renderer/div[1]/ytd-section-list-renderer/div[2]/ytd-item-section-renderer/div[3]/ytd-playlist-video-list-renderer/div[3]/ytd-playlist-video-renderer[' + index + ']/div[2]/a/div/ytd-video-meta-block/div[1]/div[1]/ytd-channel-name/div/div/yt-formatted-string/a');
-            const txtChannel = await el3.getProperty('text');
-            let nameChannel = await txtChannel.jsonValue();
-            nameChannel = JSON.stringify(nameChannel);
-            nameChannel = nameChannel.replace(/"+/g,'').replace(' - Topic', '').replace('OFFICIAL', '').replace('Official','');
-            nameChannel = nameChannel.replace("YouTube Channel", '');
-            nameChannel = nameChannel.replace("BANGTANTV", "BTS"); // This is a special case for BTS.
-            console.log(nameSong, nameChannel);
-            listSong.push(nameSong);
-            listChannel.push(nameChannel);
+            // A deleted video has been found.
+            catch (err)
+            {
+                console.log("<Found deleted video..>");
+                continue;
+            }
         }
-    }
-    // It catches an error if the user puts an invalid link.
-    catch (err){
-        console.log("Invalid YouTube playlist link. Either have the playlist be public/unlisted");
-        console.log("Remember to have the link be like this 'https://www.youtube.com...'");
-        return process.exit(1);
-    }
     console.log(listSong);
     console.log(listChannel);
     await browser.close();
@@ -153,6 +167,9 @@ async function makeSpotifyPlaylist() {
         width: 1200,
         height: 800
     });
+    // Configure the navigation timeout
+    await page.setDefaultNavigationTimeout(0);
+
     await page.goto('https://accounts.spotify.com/en/login?continue=https:%2F%2Fopen.spotify.com%2F');
     // await page.screenshot({path:'spotify.png'});
     
