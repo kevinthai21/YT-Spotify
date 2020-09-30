@@ -18,7 +18,9 @@ Then, the user should type `node node.js` to run the program.
 Note
 -----
 - Keep in mind that the music playlist from YouTube needs to be public or unlisted.
-- The program takes in songs (from YouTube) that are in two different formats: Video Title: "Treasure", Channel: "Bruno Mars" or Video Title: "Treasure", Channel: "Bruno Mars - Topic"
+- The program takes in songs (from YouTube) that are in two different formats: 
+    * **Video Title: "Treasure", Channel: "Bruno Mars"** or 
+    * **Video Title: "Treasure", Channel: "Bruno Mars - Topic"**
     (It can take music videos or lyric videos but the program is less likely to find it on Spotify)
 - The program will not save the Spotify login information.
 
