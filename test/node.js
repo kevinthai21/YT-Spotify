@@ -132,9 +132,16 @@ async function scrapePlaylist(url) {
                 nameChannel = nameChannel.replace("YouTube Channel", '');
                 nameChannel = nameChannel.replace("BANGTANTV", "BTS"); // This is a special case for BTS.
                 nameChannel = nameChannel.replace(/[^ a-zA-Z0-9()]+/g, "").replace(/  +/g, '');
-                console.log(nameSong, nameChannel);
-                listSong.push(nameSong);
-                listChannel.push(nameChannel);
+                if(nameChannel.length == 0 || nameSong.length == 0)
+                {
+                    continue;
+                }
+                else 
+                {
+                    console.log(nameSong, nameChannel);
+                    listSong.push(nameSong);
+                    listChannel.push(nameChannel);
+                }
             }
 
             // A deleted video has been found.
@@ -182,7 +189,7 @@ async function makeSpotifyPlaylist() {
     await inputPass[0].type(spotifyPass);
     // await page.screenshot({path:'spotify.png'});
 
-    const buttonLogin = await page.$x('/html/body/div[1]/div[2]/div/form/div[3]/div[2]/button');
+    const buttonLogin = await page.$x('/html/body/div[1]/div[2]/div/form/div[4]/div[2]/button');
     await buttonLogin[0].click();
     await page.waitFor(7000);
 
