@@ -1,5 +1,9 @@
 import datetime
+from enum import Flag
 
+class PlaylistType(Flag):
+    YOUTUBE = 'YOUTUBE'
+    SPOTIFY = 'SPOTIFY'
 
 def print_spotify_api_error(status_code):
     print(f"Spotify API failed with the status code {status_code}")
