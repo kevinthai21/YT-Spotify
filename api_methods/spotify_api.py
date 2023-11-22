@@ -9,6 +9,20 @@ from helper_methods import (
 from spotipy.oauth2 import SpotifyOAuth # type: ignore
 
 
+def get_user_id_api(
+    access_token: str,
+) -> Optional[Response]:
+    response : Response = get(
+        url=f'https://api.spotify.com/v1/me',
+        headers={'Authorization': f'Bearer {access_token}'}
+    )
+
+    if response.status_code != 200:
+        print_spotify_api_error(response.status_code)
+        return None
+    
+    return response
+
 def get_user_playlists_api(
     access_token: str, 
     user_id: str
@@ -121,6 +135,9 @@ class SpotifyClient:
         self.redirect_uri = redirect_uri
         self.__access_token = None
         self.__set_new_access_token()
+        self.__user_id = self.get_user_id()
+        if self.__user_id is None:
+            return None
 
     def __set_new_access_token(
         self
@@ -144,10 +161,23 @@ class SpotifyClient:
             code=None, check_cache=True
         )
         self.__access_token = token.get("access_token")
+
+    def get_user_id(self) -> Optional[str]:
+        response = get_user_id_api(
+            access_token=self.__access_token
+        )
+        if response is None:
+            return None
+        
+        json : Dict[str, Any] = response.json()
+        id = json.get("id")
+        if id is None:
+            return None
+        return id
     
-    def get_user_playlists(self, user_id: str) -> Optional[List[Playlist]]:
+    def get_user_playlists(self) -> Optional[List[Playlist]]:
         response = get_user_playlists_api(
-            access_token=self.__access_token, user_id=user_id
+            access_token=self.__access_token, user_id=self.__user_id
         )
         if response is None:
             return None
@@ -192,14 +222,12 @@ class SpotifyClient:
     # method will create an empty playlist
     def create_playlist(
         self, 
-        user_id, 
         name=None, 
         description=None
     ) -> Optional[Playlist]:
         
         response = create_playlist_api(
             access_token=self.__access_token, 
-            user_id=user_id, 
             name=name if name else create_default_playlist_name(), 
             description=description if description else create_default_playlist_desc(),
         )
@@ -215,7 +243,6 @@ class SpotifyClient:
 
     def add_songs(
         self, 
-        user_id: str, 
         playlist: Playlist, 
         songs: List[Song]
     ) -> bool:

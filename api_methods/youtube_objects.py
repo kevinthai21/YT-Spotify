@@ -7,6 +7,7 @@ class YouTubeVideo:
 class YouTubePlaylist:
 
 	def __init__(self):
+		self.id = ""
 		self.videos = [] # List[YouTubeVideo] 
 
 	def size(self):

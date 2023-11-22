@@ -1,4 +1,4 @@
-from typing import Tuple, Optional
+from typing import Tuple, Optional, List
 from youtube_objects import YouTubeVideo, YouTubePlaylist
 
 class YouTubeAPI:
@@ -12,3 +12,18 @@ class YouTubeAPI:
         return (playlist, True)
 
     
+class YouTubeClient:
+
+    def __init__(self):
+        ...
+    
+    def create_playlist(self) -> Optional[YouTubePlaylist]:
+        pass
+    
+    def search_video(self, search_term: str) -> Optional[YouTubeVideo]:
+        pass
+    
+    def add_videos_to_playlist(
+        self, playlist: YouTubePlaylist, videos: List[YouTubeVideo]
+    ):
+        pass
