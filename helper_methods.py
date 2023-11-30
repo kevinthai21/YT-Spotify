@@ -8,11 +8,11 @@ class PlaylistType(Flag):
 def print_spotify_api_error(status_code):
     print(f"Spotify API failed with the status code {status_code}")
 
-## TODO: [SP-49] update default playlist name and desc
 def create_default_playlist_name() -> str:
     now = datetime.datetime.now()
-    return f"Playlist {now.year}.{now.month}.{now.day} {now.hour}:{now.minute}" 
+    return f"Transferred Playlist {now.month}-{now.day}-{now.year} {now.hour}:{now.minute}"
 
-## TODO: [SP-49] update default playlist name and desc
 def create_default_playlist_desc() -> str:
-    return "This playlist is created by a bot! How cool is that?!?\nCheck here for more info: https://github.com/kevinthai21/YT-Spotify"
+    return """Playlist created with a program by @kevin.thai21
+To learn more, look for kevinthai21/YT-Spotify on Github!
+"""

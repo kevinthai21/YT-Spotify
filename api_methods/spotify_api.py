@@ -227,7 +227,8 @@ class SpotifyClient:
     ) -> Optional[Playlist]:
         
         response = create_playlist_api(
-            access_token=self.__access_token, 
+            access_token=self.__access_token,
+            user_id=self.__user_id,
             name=name if name else create_default_playlist_name(), 
             description=description if description else create_default_playlist_desc(),
         )
