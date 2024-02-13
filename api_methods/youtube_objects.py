@@ -1,15 +1,14 @@
 from typing import List
+from base_music import BaseSong, BasePlaylist
 
-class YouTubeVideo:
-	name: str
-	channel: str
+class YouTubeVideo(BaseSong):
+	def __init__(self, name, channel):
+		super().__init__(self, name)
+		self.channel = channel
 
-class YouTubePlaylist:
 
+class YouTubePlaylist(BasePlaylist):
 	def __init__(self):
-		self.id = ""
-		self.videos = [] # List[YouTubeVideo] 
-
-	def size(self):
-		return len(self.videos)
+		super().__init__(self) 
+		self.songs: List[YouTubeVideo] = []
 
