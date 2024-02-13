@@ -1,16 +1,13 @@
+from typing import List
+from base_music import BaseSong, BasePlaylist
 
-class Song:
-    def __init__(self, id, name, uri):
-        self.id = id
-        self.name = name
+class SpotifySong(BaseSong):
+    def __init__(self, id, name, uri): 
+        super().__init__(self, id, name)
         self.uri = uri
 
-class Playlist:
-    def __init__(self, id, playlist_name, uri = ""):
-        self.name = playlist_name # str
-        self.id = id
-        self.songs = [] # List[Song]
+class SpotifyPlaylist(BasePlaylist):
+    def __init__(self, id, name, uri=""):
+        super().__init__(self,id, name)
+        self.songs: List[SpotifySong] = []
         self.uri = uri
-
-    def size(self) -> int:
-        return len(self.songs)
