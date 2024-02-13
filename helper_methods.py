@@ -8,6 +8,9 @@ class PlaylistType(Flag):
 def print_spotify_api_error(status_code):
     print(f"Spotify API failed with the status code {status_code}")
 
+def print_youtube_api_error(status_code):
+    print(f"YouTube API failed with the status code {status_code}")
+
 def create_default_playlist_name() -> str:
     now = datetime.datetime.now()
     return f"Transferred Playlist {now.month}-{now.day}-{now.year} {now.hour}:{now.minute}"
