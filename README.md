@@ -19,12 +19,12 @@ Information needed before running:
 * Link to your **public** YouTube playlist
 * Your Spotify login information
 
-Simply run:
 The user needs to install these dependencies (pupeteer, readline-sync):
 ```
 npm install pupeteer
 npm install readline-sync
 ```
+Simply run: 
 `node transfer_playlist.js`
 
 Note
