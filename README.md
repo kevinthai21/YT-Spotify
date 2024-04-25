@@ -3,17 +3,29 @@ YouTube-To-Spotify Playlist Transfer
 
 Information
 -----
-The program takes a music playlist from YouTube and creates a new playlist on Spotify.
+The script takes a music playlist from YouTube and creates a new playlist on Spotify.
 
-The program will ask the user for information on the playlist the user wants to copy from (name and link). Then, it will ask for the Spotify login information (Note: It will not save the login information.).
+The program will ask the user for information on the playlist the user wants to copy from (name and link). Then, it will ask for the Spotify login information (note it will not save the login information).
 
 After the program saved the user information, the program will scrape the names of the songs and artists from the YouTube playlist. It will create a new playlist and will transfer all of the songs.
 If there are some songs that are not listed, there is a log in the console of songs that are added and those that aren't.
 
 I wrote this program in JavaScript. It uses `NodeJS`, `Puppeteer`, and `readline-sync`.
 `Puppeteer` is a Node library that controls a headless Chrome or Chromium. `Readline-sync` is a library that takes input from the user and saves the information for the program to use.
-To run the program, the user should install these extensions by typing `npm install puppeteer` and `npm install readline-sync`.
-Then, the user should type `node node.js` to run the program.
+
+How to Run:
+-----
+Information needed before running:
+* Link to your **public** YouTube playlist
+* Your Spotify login information
+
+Simply run:
+The user needs to install these dependencies (pupeteer, readline-sync):
+```
+npm install pupeteer
+npm install readline-sync
+```
+`node transfer_playlist.js`
 
 Note
 -----
