@@ -1,178 +1,262 @@
+import os
+import sys
 from typing import Optional, List
-from youtube_objects import YouTubeVideo, YouTubePlaylist
-from requests import Response, get, post, put
-from helper_methods import print_youtube_api_error, create_default_playlist_desc, create_default_playlist_name
-from time import sleep
+from dotenv import load_dotenv
 
-class YouTubeAPI:
-    def __init__(self, access_key: str, access_token: str):
-        self.__access_key = access_key
-        self.__access_token = access_token
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
 
-    def get_user_playlists(self, page_token: Optional[str] = None) -> Optional[Response]:
-        response: Response = get(
-            url=f'https://youtube.googleapis.com/youtube/v3/playlists?part=snippet%2CcontentDetails&maxResults=50&mine=true&key={self.__access_key}' if page_token is None else f'https://youtube.googleapis.com/youtube/v3/playlists?part=snippet%2CcontentDetails&pageToken={page_token}&maxResults=50&mine=true&key={self.__access_key}',
-            headers= {
-                'Authorization:': f'Bearer {self.__access_token}',
-                'Accept:': 'application/json',
-            }
-        )
-        if response.status_code != 200:
-            print_youtube_api_error(response.status_code)
-            return None
-        return response
+from api_methods.youtube_objects import YouTubeVideo, YouTubePlaylist
+from helper_methods import (
+    print_youtube_api_error,
+    create_default_playlist_desc,
+    create_default_playlist_name,
+)
 
-    def get_playlist_videos(self, playlist_id: str, page_token: Optional[str] = None) -> Optional[Response]:
-        response: Response = get(
-            url=f'https://youtube.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId={playlist_id}&key={self.__access_key}' if page_token is None else f'https://youtube.googleapis.com/youtube/v3/playlistItems?part=snippet&pageToken={page_token}&maxResults=50&playlistId={playlist_id}&key={self.__access_key}',
-            headers= {
-                'Authorization:': f'Bearer {self.__access_token}',
-                'Accept:': 'application/json',
-            }
-        )
-        if response.status_code != 200:
-            print_youtube_api_error(response.status_code)
-            return None
-        return response
-        
-    def create_playlist(self, playlist_name: str, playlist_description: str) -> Optional[Response]:
-        response: Response = post(
-            url=f'https://youtube.googleapis.com/youtube/v3/playlists?part=snippet%2Cstatus&key={self.__access_key}', 
-            headers={
-                'Authorization:': f'Bearer {self.__access_token}',
-                'Accept:': 'application/json',
-                'Content-Type:': 'application/json',
-            },
-            data={
-                'snippet': {
-                    "title": playlist_name,
-                    "description": playlist_description,
-                    "status": {
-                        "privacyStatus": "private"
-                    }                    
-                }
-            }
-        )
-        if response != 200:
-            print_youtube_api_error(response.status_code)
-            return None
-    
-    # return number of videos successfully inserted
-    def add_videos_to_playlist(self, playlist_id: str, video_ids: List[str]) -> int:
-        num_inserted: int = 0
-        for video_id in video_ids:
-            response: Response = put(
-                url=f'https://youtube.googleapis.com/youtube/v3/playlistItems?part=snippet&key={self.__access_key}',
-                headers= {
-                    'Authorization:': f'Bearer {self.__access_token}',
-                    'Accept:': 'application/json'
-                },
-                data={
-                    'snippet': {
-                        'playlistId': {playlist_id},
-                        'resourceId': {
-                            'kind': 'youtube#video',
-                            'videoId': {video_id}
-                        }
-                    }
-                }
-            )
-            if response.status_code != 200:
-                print_youtube_api_error(response.status_code)
-                print(f"Unable to insert video id: {video_id}")
-            num_inserted += 1
-            sleep(10) # cooldown
-        return num_inserted
+# ── OAuth config ───────────────────────────────────────────────────────────────
 
-    def search_video(self, search_query: str) -> Optional[Response]:
-        response: Response = get(
-            url=f"https://youtube.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&q={search_query}&key={self.__access_key}",
-            headers= {
-                'Authorization:': f'Bearer {self.__access_token}',
-                'Accept:': 'application/json'
-            }
-        )
-        if response.status_code != 200:
-            print_youtube_api_error(response.status_code)
-            return None    
-    
+load_dotenv()
+
+CLIENT_SECRETS_FILE = os.getenv("CLIENT_SECRETS_FILE")
+TOKEN_FILE = "token.json"
+SCOPES = ["https://www.googleapis.com/auth/youtube"]
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+def get_authenticated_service():
+    """
+    Authenticate via OAuth 2.0 and return a YouTube API service object.
+    - On first run: opens a browser window for you to log in and authorize.
+    - On subsequent runs: reuses the cached token in token.json.
+    """
+    creds = None
+
+    if os.path.exists(TOKEN_FILE):
+        creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
+
+    print(CLIENT_SECRETS_FILE)
+    print(TOKEN_FILE)
+
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            print("Refreshing YouTube access token...")
+            creds.refresh(Request())
+        else:
+            if not os.path.exists(CLIENT_SECRETS_FILE):
+                print(f"ERROR: '{CLIENT_SECRETS_FILE}' not found.")
+                print("Download your OAuth 2.0 credentials JSON from Google Cloud Console")
+                print("and save it as 'client_secrets.json' next to this script.")
+                sys.exit(1)
+            print("Opening browser for YouTube OAuth authorization...")
+            flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRETS_FILE, SCOPES)
+            creds = flow.run_local_server(port=0)
+
+        with open(TOKEN_FILE, "w") as f:
+            f.write(creds.to_json())
+        print(f"YouTube token saved to {TOKEN_FILE}")
+
+    return build("youtube", "v3", credentials=creds)
+
+
+# ── YouTubeClient ──────────────────────────────────────────────────────────────
+
 class YouTubeClient:
+    """
+    High-level YouTube client using the google-api-python-client library.
+    Uses OAuth 2.0 so unlisted videos and playlists are accessible.
+    """
 
     def __init__(self):
-        self._youtube_api = YouTubeAPI(access_key="", access_token="")
-    
+        self._youtube = get_authenticated_service()
+
+    # ── Playlists ──────────────────────────────────────────────────────────────
+
     def get_user_playlists(self) -> Optional[List[YouTubePlaylist]]:
-        is_start: bool = True
+        """Return all playlists owned by the authenticated user."""
+        playlists: List[YouTubePlaylist] = []
         next_page_token: Optional[str] = None
-        youtube_playlists = []
-        while(is_start or next_page_token is not None):
-            response = self._youtube_api.get_user_playlists(page_token=next_page_token)
-            if response is None:
-                return None
-            response_json = response.json()
-            for item in response_json['items']:
-                youtube_playlists.append(
+
+        while True:
+            response = (
+                self._youtube.playlists()
+                .list(
+                    part="snippet,contentDetails",
+                    mine=True,
+                    maxResults=50,
+                    pageToken=next_page_token,
+                )
+                .execute()
+            )
+
+            for item in response.get("items", []):
+                playlists.append(
                     YouTubePlaylist(
-                        id=item['id'], name=item['snippet']['title'], description=item['snippet']['description']
+                        id=item["id"],
+                        name=item["snippet"]["title"],
+                        description=item["snippet"].get("description", ""),
                     )
                 )
-            next_page_token = response_json.get('nextPageToken')
-            if is_start == True:
-                is_start = False
-        return youtube_playlists
 
+            next_page_token = response.get("nextPageToken")
+            if not next_page_token:
+                break
+
+        return playlists
+
+    def pick_playlist(self) -> Optional[YouTubePlaylist]:
+        """
+        Fetch user's playlists, print them, and let the user pick one
+        interactively. Returns the selected YouTubePlaylist.
+        """
+        playlists = self.get_user_playlists()
+        if not playlists:
+            print("No playlists found on this account.")
+            return None
+
+        print(f"\nFound {len(playlists)} playlist(s):\n")
+        for i, pl in enumerate(playlists):
+            print(f"  [{i + 1}] {pl.name}  [ID: {pl.id}]")
+
+        while True:
+            raw = input("\nEnter the playlist number to transfer: ").strip()
+            if raw.isdigit() and 1 <= int(raw) <= len(playlists):
+                return playlists[int(raw) - 1]
+            print("  Invalid selection, please try again.")
 
     def get_playlist_videos(self, playlist: YouTubePlaylist) -> Optional[List[YouTubeVideo]]:
-        is_start: bool = True
+        """
+        Fetch all videos in a playlist, including unlisted ones.
+        Uses contentDetails to get videoId, then fetches snippet separately
+        to get the channel title (not just channelId).
+        """
+        video_ids: List[str] = []
         next_page_token: Optional[str] = None
-        while (is_start or next_page_token is not None): # if ever less than 50, then no need to query more
-            response = self._youtube_api.get_playlist_videos(
-                playlist_id=playlist.id, page_token=next_page_token
-            )
-            if response is None:
-                return None
-            response_json = response.json()
-            next_page_token = response_json.get('nextPageToken')
-            youtube_videos: List[YouTubeVideo] = []
-            for item in response["items"]:
-                video = YouTubeVideo(
-                    id=item['snippet']['resourceId']['videoId'], 
-                    name=item['snippet']['title'],
-                    channel=item['snippet']['channelId']
+
+        # Step 1: collect all video IDs from playlistItems
+        while True:
+            response = (
+                self._youtube.playlistItems()
+                .list(
+                    part="contentDetails",
+                    playlistId=playlist.id,
+                    maxResults=50,
+                    pageToken=next_page_token,
                 )
-                youtube_videos.append(video)
-            if is_start == True:
-                is_start = False
-        return youtube_videos
-        
-    
-    def create_playlist(self, playlist_name: Optional[str]=None, playlist_description: Optional[str] = None) -> Optional[YouTubePlaylist]:
-        playlist_name = playlist_name if playlist_name else create_default_playlist_name()
-        response = self._youtube_api.create_playlist(
-            playlist_name=playlist_name,
-            playlist_description= playlist_description if playlist_description else create_default_playlist_desc()
+                .execute()
+            )
+
+            for item in response.get("items", []):
+                video_ids.append(item["contentDetails"]["videoId"])
+
+            next_page_token = response.get("nextPageToken")
+            if not next_page_token:
+                break
+
+        if not video_ids:
+            return []
+
+        # Step 2: fetch full snippet for all video IDs (batches of 50)
+        videos: List[YouTubeVideo] = []
+        for i in range(0, len(video_ids), 50):
+            batch = video_ids[i : i + 50]
+            response = (
+                self._youtube.videos()
+                .list(part="snippet", id=",".join(batch))
+                .execute()
+            )
+            for item in response.get("items", []):
+                videos.append(
+                    YouTubeVideo(
+                        id=item["id"],
+                        name=item["snippet"]["title"],
+                        # channelTitle gives the human-readable name, not just ID
+                        channel=item["snippet"]["channelTitle"],
+                    )
+                )
+
+        return videos
+
+    # ── Create & populate playlist ─────────────────────────────────────────────
+
+    def create_playlist(
+        self,
+        playlist_name: Optional[str] = None,
+        playlist_description: Optional[str] = None,
+    ) -> Optional[YouTubePlaylist]:
+        name = playlist_name or create_default_playlist_name()
+        desc = playlist_description or create_default_playlist_desc()
+
+        response = (
+            self._youtube.playlists()
+            .insert(
+                part="snippet,status",
+                body={
+                    "snippet": {"title": name, "description": desc},
+                    "status": {"privacyStatus": "private"},
+                },
+            )
+            .execute()
         )
-        if response is None:
+
+        if not response:
+            print_youtube_api_error("no response")
             return None
-        playlist_id = response['id']
-        return YouTubePlaylist(playlist_id, playlist_name)
-    
-    def search_video(self, name: str, artist: str) -> Optional[YouTubeVideo]:
-        response = self._youtube_api.search_video(f"{artist} - {name}")
-        if response is None:
-            return None
-        youtubeVideoId = response["items"][0]["id"]["videoId"]
-        channelId = response["items"][0]["snippet"]["channelId"]
-        videoTitle = response["items"][0]["snippet"]["title"]
-        return YouTubeVideo(
-            id=youtubeVideoId, name=videoTitle, channel=channelId
+
+        return YouTubePlaylist(
+            id=response["id"],
+            name=response["snippet"]["title"],
+            description=response["snippet"].get("description", ""),
         )
-    
+
     def add_videos_to_playlist(
         self, playlist: YouTubePlaylist, videos: List[YouTubeVideo]
     ) -> None:
-        num_inserted = self._youtube_api.add_videos_to_playlist(
-            playlist_id=playlist.id,video_ids=[video.id for video in videos]
+        """Insert videos into a playlist one at a time (API requirement)."""
+        num_inserted = 0
+        for video in videos:
+            try:
+                self._youtube.playlistItems().insert(
+                    part="snippet",
+                    body={
+                        "snippet": {
+                            "playlistId": playlist.id,
+                            "resourceId": {
+                                "kind": "youtube#video",
+                                "videoId": video.id,
+                            },
+                        }
+                    },
+                ).execute()
+                num_inserted += 1
+            except Exception as e:
+                print(f"  ERROR: Could not insert video '{video.name}': {e}")
+
+        if num_inserted != len(videos):
+            print(f"  WARNING: Inserted {num_inserted}/{len(videos)} videos.")
+        else:
+            print(f"  Successfully inserted all {num_inserted} video(s).")
+
+    # ── Search ─────────────────────────────────────────────────────────────────
+
+    def search_video(self, name: str, artist: str) -> Optional[YouTubeVideo]:
+        """Search YouTube for a song and return the top result."""
+        query = f"{artist} - {name}"
+        response = (
+            self._youtube.search()
+            .list(part="snippet", q=query, maxResults=1, type="video")
+            .execute()
         )
-        if len(videos) != num_inserted:
-            print(f"Found {len(videos)} videos, but only to insert {num_inserted} videos.")
+
+        items = response.get("items", [])
+        if not items:
+            print(f"  [MISS] No YouTube result for '{query}'.")
+            return None
+
+        item = items[0]
+        return YouTubeVideo(
+            id=item["id"]["videoId"],
+            name=item["snippet"]["title"],
+            channel=item["snippet"]["channelTitle"],
+        )
