@@ -1,0 +1,6 @@
+.env
+.mypy_cache
+__pycache__
+*.json
+/google-cloud-sdk
+.*
