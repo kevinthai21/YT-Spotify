@@ -5,6 +5,10 @@ Information
 -----
 The program will take a YouTube playlist and save it into a new Spotify playlist!
 
+How to Run:
+- Set up pipenv: `pipenv install`.
+- Run the main method: `pipenv run python3 main.py`.
+
 Note
 -----
 - Keep in mind that the music playlist from YouTube needs to be public or unlisted.

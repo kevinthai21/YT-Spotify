@@ -1,6 +1,6 @@
 // Created by Kevin Thai
 
-// The file will take in a URL of a YouTube playlist and it will save it into
+// The script will take in a URL of a YouTube playlist and it will save it into
 // a Spotify playlist for you. It requires a YouTube playlist (public/unlisted)
 // and login information for Spotify (note: that information won't be saved).
 
@@ -10,23 +10,23 @@
 // Ex.  Title: "Treasure", Channel: "Bruno Mars" or
 //      Title: "Treasure", Channel: "Bruno Mars - Topic"
 
-let playlistName;
-let link;
-let spotifyEmail;
-let spotifyPass;
-let ready = false;
-let failedTransfers = [];
-
+// let playlistName;
+// let link;
+// let spotifyEmail;
+// let spotifyPass;
+// let failedTransfers = [];
 
 const reader = require('readline-sync');
 
-// takes information from the user.
-while (ready == false) {
-    playlistName = reader.question("Enter a name for the playlist: ");
-    link = reader.question('Enter your YouTube playlist link: ');
+/**
+ * Gets information from the user and stores it into a dictionary.
+ */
+function getInformationFromUser() {
+    let playlistName = reader.question("Enter a name for the playlist: ");
+    let link = reader.question('Enter your YouTube playlist link: ');
     console.log("Please enter your Spotify login. Don't worry, it won't be saved elsewhere.");
-    spotifyEmail = reader.question('Enter your Spotify email/username: ');
-    spotifyPass = reader.question('Enter your Spotify password: ', { hideEchoBack: true});
+    let spotifyEmail = reader.question('Enter your Spotify email/username: ');
+    let spotifyPass = reader.question('Enter your Spotify password: ', { hideEchoBack: true});
     let spotifyPassTest;
     spotifyPassTest = reader.question('Re-enter your Spotify password: ', { hideEchoBack: true});
     while(spotifyPass != spotifyPassTest)
@@ -41,41 +41,49 @@ while (ready == false) {
     }
 
     console.log("Your information: ");
-    console.log("<Playlist name>: " + playlistName);
-    console.log("<Playlist link>: " + link);
-    console.log("<Spotify username/email>: " + spotifyEmail);
-    console.log("<Spotify password>: " + spotifyPassEncrypt);
+    console.log("[Playlist name]: " + playlistName);
+    console.log("[Playlist link]: " + link);
+    console.log("[Spotify username/email]: " + spotifyEmail);
+    console.log("[Spotify password]: " + spotifyPassEncrypt);
 
-    if(reader.keyInYN("Is the information correct?")) { 
-        ready = true;
+    if(reader.keyInYN("Is the information correct?") == false) { 
+        exit()
+    }
+
+    return {
+        name: playlistName,
+        link: link,
+        email: spotifyEmail,
+        password: spotifyPass
     }
 }
 
 const puppeteer = require('puppeteer');
+const { userInfo } = require('os');
 var listSong = [];
 var listChannel = [];
 let totalNum;
 
-/*
-This function takes in a URL of a YouTube playlist and will save each individual 
-song and its artist into an array.
+/** 
+ * This function takes in a URL of a YouTube playlist and will save each 
+ * individual song and its artist into an array.
+ * @param {dictionary} info - information given from the user
 */
-async function scrapePlaylist(url) {
+async function transferPlaylist(info) {
     ready = false;
     console.log("\n");
     console.log("Opening browser...\n");
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
-
     // Configure the navigation timeout
     await page.setDefaultNavigationTimeout(0);
 
     // checks the link that user provided
     try {
-        if(url.includes("https://www.youtube.com") == false) {
+        if(info.link.includes("https://www.youtube.com") == false) {
             throw new Error("Not valid link.");
         }
-        await page.goto(url);
+        await page.goto(info.link);
     }
     catch (err) {
         console.log("Invalid link. Either have the playlist be public/unlisted");
@@ -90,14 +98,14 @@ async function scrapePlaylist(url) {
         await page.evaluate( ()=> {
             window.scrollBy(0,10000);
         });
-        await page.waitFor(6000);
-        // await page.screenshot({path:'1000.png'});
+        await new Promise(r => setTimeout(r, 600));
 
         console.log("Time to copy info!\n");
 
     
         // saves the number of videos/songs in the playlist
-        const[el] = await page.$x('/html/body/ytd-app/div/ytd-page-manager/ytd-browse/ytd-playlist-sidebar-renderer/div/ytd-playlist-sidebar-primary-info-renderer/div[1]/yt-formatted-string[1]');
+                                        
+        const [el] = await page.$x('/html/body/ytd-app/div[1]/ytd-page-manager/ytd-browse[3]/ytd-playlist-header-renderer/div/div[2]/div[1]/div/div[1]/div[1]/ytd-playlist-byline-renderer/div/yt-formatted-string[1]');
         const txtNumber= await el.getProperty('text');
         let nameNumber = await txtNumber.jsonValue();
         nameNumber = JSON.stringify(nameNumber);
@@ -154,18 +162,16 @@ async function scrapePlaylist(url) {
     console.log(listSong);
     console.log(listChannel);
     await browser.close();
-    await makeSpotifyPlaylist();
+    await makeSpotifyPlaylist(info);
 }
 
-/*
-This function will login with Spotify details and create a new playlist.
-After a new playlist is created, it will save the songs from the YouTube
-playlist into this new playlist on Spotify.
-
-For debugging purposes, there will be screenshots saved to see if the
-program is working correctly.
+/**
+* This function will login with Spotify details and create a new playlist.
+* After a new playlist is created, it will save the songs from the YouTube
+* playlist into this new playlist on Spotify.
+* @param {dictionary} userInfo - information given from the user
 */
-async function makeSpotifyPlaylist() {
+async function makeSpotifyPlaylist(userInfo) {
     let numSuccess=0;
     console.log("Now transferring...");
     const browser = await puppeteer.launch();
@@ -178,16 +184,13 @@ async function makeSpotifyPlaylist() {
     await page.setDefaultNavigationTimeout(0);
 
     await page.goto('https://accounts.spotify.com/en/login?continue=https:%2F%2Fopen.spotify.com%2F');
-    // await page.screenshot({path:'spotify.png'});
     
     // It will input the login details. The program won't save the login details.
     
     const inputUser = await page.$x('/html/body/div[1]/div[2]/div/form/div[1]/div/input');
-    await inputUser[0].type(spotifyEmail);
-    // await page.screenshot({path:'spotify.png'});
+    await inputUser[0].type(userInfo.email);
     const inputPass = await page.$x('/html/body/div[1]/div[2]/div/form/div[2]/div/input');
-    await inputPass[0].type(spotifyPass);
-    // await page.screenshot({path:'spotify.png'});
+    await inputPass[0].type(userInfo.password);
 
     const buttonLogin = await page.$x('/html/body/div[1]/div[2]/div/form/div[4]/div[2]/button');
     await buttonLogin[0].click();
@@ -196,7 +199,6 @@ async function makeSpotifyPlaylist() {
     // if can click on this successfully, it has logged in.
     try {
         // This will create a new, empty playlist.
-        // await page.screenshot({path:'spotify.png'});
         await page.click('button.fcdf941c8ffa7d0878af0a4f04aa05bb-scss');
 
     }
@@ -208,15 +210,12 @@ async function makeSpotifyPlaylist() {
 
     const inputPlaylistName = await page.$x('/html/body/div[4]/div/div[3]/div/div[1]/div/div/input');
     await inputPlaylistName[0].type(playlistName);
-    // await page.screenshot({path:'screenshots/spotify_1_test.png'});
 
     const buttonCreate = await page.$x('/html/body/div[4]/div/div[3]/div/div[2]/div[2]/button');
     await buttonCreate[0].click();
-    // await page.screenshot({path:'screenshots/spotify_2_created.png'});
 
     const buttonSearch = await page.$x('/html/body/div[4]/div/div[2]/div[2]/nav/ul/li[2]/a');
     await buttonSearch[0].click();
-    // await page.screenshot({path:'screenshots/spotify_3_search.png'});
 
     // This for-loop will search the song in Spotify. Then, it will add it to the playlist.
     let index;
@@ -225,24 +224,19 @@ async function makeSpotifyPlaylist() {
 
         await page.goto('https://open.spotify.com/search/'+ listSong[index]+ '%20' + listChannel[index]);
         await page.waitFor(3000);
-        // await page.screenshot({path:'screenshots/spotify_4_searchResults.png'});
 
         try {
             const foundSong = await page.$x('/html/body/div[4]/div/div[2]/div[4]/div[1]/div/div[2]/div/div/div[2]/div/div/div/section[2]/div/div[2]/div[1]/div/div/div[3]');
             await foundSong[0].click({button:'right'});
             await page.waitFor(3000);
-            // await page.screenshot({path:'screenshots/spotify_5_options.png'});
-
 
             const buttonAdd = await page.$x('/html/body/div[4]/div/nav[1]/div[4]');
             await buttonAdd[0].click();
             await page.waitFor(3000);
-            // await page.screenshot({path:'screenshots/spotify_6_setOfPlaylists.png'});
 
             const buttonPlaylist = await page.$x('/html/body/div[4]/div/div[3]/div/div[4]/div/div/div[2]/div[1]/div/div/div/div');
             await buttonPlaylist[0].click();
             await page.waitFor(3000);
-            // await page.screenshot({path:'screenshots/spotify_7_done.png'});
             console.log("Added " + listSong[index] + ' - ' + listChannel[index]);
             numSuccess += 1;
         }
@@ -253,6 +247,8 @@ async function makeSpotifyPlaylist() {
         }
     }
     await browser.close();
+
+    // display the results
     console.log("Sucessfully added " + numSuccess + "/" + totalNum + " songs!");
     console.log("Failed transfers: ");
     for(index=0; index<failedTransfers.length; index++){
@@ -261,6 +257,6 @@ async function makeSpotifyPlaylist() {
     return process.exit(0);
 }
 
-if (ready)  {
-    scrapePlaylist(link);
-}
+
+informationFromUser = getInformationFromUser();
+transferPlaylist(informationFromUser);
