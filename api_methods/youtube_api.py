@@ -16,7 +16,6 @@ from helper_methods import (
 )
 
 # ── OAuth config ───────────────────────────────────────────────────────────────
-
 load_dotenv()
 
 CLIENT_SECRETS_FILE = os.getenv("CLIENT_SECRETS_FILE")
@@ -36,8 +35,6 @@ def get_authenticated_service():
     if os.path.exists(TOKEN_FILE):
         creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
 
-    print(CLIENT_SECRETS_FILE)
-    print(TOKEN_FILE)
 
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
@@ -241,22 +238,37 @@ class YouTubeClient:
     # ── Search ─────────────────────────────────────────────────────────────────
 
     def search_video(self, name: str, artist: str) -> Optional[YouTubeVideo]:
-        """Search YouTube for a song and return the top result."""
-        query = f"{artist} - {name}"
-        response = (
-            self._youtube.search()
-            .list(part="snippet", q=query, maxResults=1, type="video")
-            .execute()
-        )
+        """
+        Search YouTube Music for a song using artist + name for a one-to-one match.
+        Tries 'artist - name' first, then falls back to name only.
+        """
+        queries = [
+            f"{artist} - {name}" if artist else name,
+            name,
+        ]
 
-        items = response.get("items", [])
-        if not items:
-            print(f"  [MISS] No YouTube result for '{query}'.")
-            return None
+        for query in queries:
+            response = (
+                self._youtube.search()
+                .list(
+                    part="snippet",
+                    q=query,
+                    maxResults=1,
+                    type="video",
+                    videoCategoryId="10",  # category 10 = Music, improves accuracy
+                )
+                .execute()
+            )
 
-        item = items[0]
-        return YouTubeVideo(
-            id=item["id"]["videoId"],
-            name=item["snippet"]["title"],
-            channel=item["snippet"]["channelTitle"],
-        )
+            items = response.get("items", [])
+            if items:
+                item = items[0]
+                print(f"  [HIT]  '{artist} - {name}' → '{item['snippet']['title']}'")
+                return YouTubeVideo(
+                    id=item["id"]["videoId"],
+                    name=item["snippet"]["title"],
+                    channel=item["snippet"]["channelTitle"],
+                )
+
+        print(f"  [MISS] No YouTube result for '{artist} - {name}'.")
+        return None

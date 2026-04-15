@@ -5,7 +5,8 @@ class BaseSong:
     def __init__(self, id: str = "", name: str = "", uri: str = ""):
         self.id: str = id
         self.name: str = name
-        self.uri: str = uri  # needed by both Spotify (spotify:track:xxx) and YouTube
+        self.uri: str = uri
+        self.artist: str = ""  # populated when fetching Spotify playlist tracks
 
 
 class BasePlaylist:

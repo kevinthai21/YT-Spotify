@@ -4,8 +4,13 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+google-auth = "*"
+google-auth-oauthlib = "*"
+google-api-python-client = "*"
+spotipy = "*"
+python-dotenv = "*"
 requests = "*"
-sptipy = "*"
+dotenv = "*"
 
 [dev-packages]
 

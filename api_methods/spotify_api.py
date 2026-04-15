@@ -53,14 +53,12 @@ def get_playlist_tracks_api(
 
 def create_playlist_api(
     access_token: str,
-    user_id: str,
     name: str,
     description: str,
     is_public: bool = False,
 ) -> Optional[Response]:
-    print(name, description)
     response: Response = post(
-        url=f"https://api.spotify.com/v1/me/playlists",
+        url="https://api.spotify.com/v1/me/playlists",
         headers={
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json",
@@ -71,7 +69,6 @@ def create_playlist_api(
             "public": is_public,
         },
     )
-    print(response.json())
     if response.status_code != 201:
         print_spotify_api_error(response.status_code)
         return None
@@ -82,7 +79,7 @@ def add_songs_to_playlist_api(
     access_token: str, playlist_id: str, song_uris: List[str]
 ) -> bool:
     response: Response = post(
-        url=f"https://api.spotify.com/v1/playlists/{playlist_id}/items",
+        url=f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks",
         headers={
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json",
@@ -268,6 +265,43 @@ class SpotifyClient:
 
         return all_playlists
 
+    def get_playlist_tracks(self, playlist: BasePlaylist) -> List[BaseSong]:
+        """Fetch ALL tracks from a Spotify playlist, paging automatically."""
+        tracks: List[BaseSong] = []
+        offset = 0
+
+        while True:
+            response = get_playlist_tracks_api(
+                access_token=self.__access_token,
+                playlist_id=playlist.id,
+                offset=offset,
+            )
+            if response is None:
+                break
+
+            data = response.json()
+            items = data.get("items", [])
+
+            for item in items:
+                track = item.get("track")
+                # track can be None if it was removed from Spotify
+                if not track:
+                    continue
+                artists = ", ".join(a["name"] for a in track.get("artists", []))
+                tracks.append(BaseSong(
+                    id=track["id"],
+                    name=track["name"],
+                    uri=track["uri"],
+                ))
+                # Store artist on the song so YouTube search can use it
+                tracks[-1].artist = artists
+
+            if len(items) < 100:
+                break
+            offset += 100
+
+        return tracks
+
     def search_track(self, name: str, artist: str) -> Optional[BaseSong]:
         best = search_track_api(
             access_token=self.__access_token, name=name, artist=artist
@@ -285,13 +319,8 @@ class SpotifyClient:
     def create_playlist(
         self, name: Optional[str] = None, description: Optional[str] = None
     ) -> Optional[BasePlaylist]:
-        if self.__user_id is None:
-            print("ERROR: No user ID — cannot create playlist.")
-            return None
-
         response = create_playlist_api(
             access_token=self.__access_token,
-            user_id=self.__user_id,
             name=name if name else create_default_playlist_name(),
             description=description if description else create_default_playlist_desc(),
         )
